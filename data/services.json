@@ -6,13 +6,13 @@
     "status_text": "Operating as expected",
     "last_checked": "2026-06-07",
     "notes": "Maternity service currently listed as active.",
-    "latitude": -30.5156,
+    "latitude": -30.516114,
     "longitude": 151.6664,
     "profile_url": "",
     "is_public": true,
     "created_at": "2026-06-07T07:58:17.633039+00:00",
-    "updated_at": "2026-06-07T11:04:46.734618+00:00",
-    "updated_by": "local-admin"
+    "updated_at": "2026-06-07T13:00:00.584655+00:00",
+    "updated_by": "admin"
   },
   {
     "service_id": "1740531e-ef65-4ce1-bdce-da3edb0a03a2",
