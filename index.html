@@ -56,7 +56,7 @@
     }
 
     .service-card p {
-      margin: 0;
+      margin: 0 0 4px;
       font-size: 13px;
       color: #555;
     }
@@ -128,6 +128,12 @@
       text-decoration: none;
     }
 
+    .empty-message {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.4;
+    }
+
     @media (max-width: 700px) {
       .layout {
         flex-direction: column;
@@ -151,7 +157,9 @@
   <div class="layout">
     <div class="sidebar">
       <h2>Maternity Services</h2>
-      <div id="serviceList"></div>
+      <div id="serviceList">
+        <p class="empty-message">Loading services...</p>
+      </div>
     </div>
 
     <div id="map"></div>
@@ -182,51 +190,19 @@
       "Satellite Map": satelliteMap
     }).addTo(map);
 
-    const services = [
-      {
-        name: "Armidale Hospital Maternity Service",
-        status: "green",
-        statusText: "Operating as expected",
-        lastChecked: "5 June 2026, 10:30 AM",
-        notes: "Maternity service currently listed as active.",
-        coords: [-30.5156, 151.6664],
-        profileUrl: "#"
-      },
-      {
-        name: "Glen Innes District Hospital",
-        status: "yellow",
-        statusText: "Reduced access / needs attention",
-        lastChecked: "5 June 2026, 9:15 AM",
-        notes: "Possible workforce pressure or temporary service disruption. Awaiting verification.",
-        coords: [-29.7380, 151.7380],
-        profileUrl: "#"
-      },
-      {
-        name: "Inverell District Hospital",
-        status: "red",
-        statusText: "Closure or major service reduction",
-        lastChecked: "4 June 2026, 4:45 PM",
-        notes: "Community report received. Admin review required before public confirmation.",
-        coords: [-29.7740, 151.1120],
-        profileUrl: "#"
-      },
-      {
-        name: "Uralla Health Service",
-        status: "grey",
-        statusText: "Unknown / not yet verified",
-        lastChecked: "Not checked yet",
-        notes: "No verified maternity service status currently available.",
-        coords: [-30.6410, 151.5000],
-        profileUrl: "#"
-      }
-    ];
-
     const markers = {};
+    const serviceList = document.getElementById("serviceList");
+
+    function safeText(value, fallback = "") {
+      return value || fallback;
+    }
 
     function getStatusIcon(status) {
+      const safeStatus = status || "grey";
+
       return L.divIcon({
         html: `
-          <div class="status-pin ${status}">
+          <div class="status-pin ${safeStatus}">
             <span>🏥</span>
           </div>
         `,
@@ -238,15 +214,21 @@
     }
 
     function createPopup(service) {
+      const status = safeText(service.status, "grey");
+      const statusText = safeText(service.status_text, "Unknown / not yet verified");
+      const lastChecked = safeText(service.last_checked, "Not checked yet");
+      const notes = safeText(service.notes, "No notes available.");
+      const profileUrl = safeText(service.profile_url, "#");
+
       return `
         <div class="popup-content">
           <h3>${service.name}</h3>
-          <div class="status-label status-${service.status}">
-            ${service.statusText}
+          <div class="status-label status-${status}">
+            ${statusText}
           </div>
-          <p><strong>Last checked:</strong><br>${service.lastChecked}</p>
-          <p><strong>Notes:</strong><br>${service.notes}</p>
-          <a class="profile-link" href="${service.profileUrl}">
+          <p><strong>Last checked:</strong><br>${lastChecked}</p>
+          <p><strong>Notes:</strong><br>${notes}</p>
+          <a class="profile-link" href="${profileUrl}">
             View full service profile
           </a>
         </div>
@@ -254,16 +236,23 @@
     }
 
     function createSidebarCard(service, index) {
+      const status = safeText(service.status, "grey");
+      const statusText = safeText(service.status_text, "Unknown / not yet verified");
+      const lastChecked = safeText(service.last_checked, "Not checked yet");
+
       const card = document.createElement("div");
-      card.className = `service-card card-${service.status}`;
+      card.className = `service-card card-${status}`;
+
       card.innerHTML = `
         <h3>${service.name}</h3>
-        <p><strong>Status:</strong> ${service.statusText}</p>
-        <p><strong>Last checked:</strong> ${service.lastChecked}</p>
+        <p><strong>Status:</strong> ${statusText}</p>
+        <p><strong>Last checked:</strong> ${lastChecked}</p>
       `;
 
       card.addEventListener("click", function() {
-        map.flyTo(service.coords, 14, {
+        const coords = [Number(service.latitude), Number(service.longitude)];
+
+        map.flyTo(coords, 14, {
           duration: 1.2
         });
 
@@ -275,27 +264,80 @@
       return card;
     }
 
-    const serviceList = document.getElementById("serviceList");
+    async function loadServices() {
+      try {
+        const response = await fetch("data/services.json?cache=" + Date.now());
 
-    services.forEach(function(service, index) {
-      const marker = L.marker(service.coords, {
-        icon: getStatusIcon(service.status)
-      }).addTo(map);
+        if (!response.ok) {
+          serviceList.innerHTML = `<p class="empty-message">Could not load service data.</p>`;
+          return;
+        }
 
-      marker.bindPopup(createPopup(service));
+        const services = await response.json();
 
-      marker.on("mouseover", function() {
-        this.openPopup();
-      });
+        const publicServices = services.filter(function(service) {
+          return service.is_public === true;
+        });
 
-      marker.on("click", function() {
-        this.openPopup();
-      });
+        serviceList.innerHTML = "";
 
-      markers[index] = marker;
+        if (publicServices.length === 0) {
+          serviceList.innerHTML = `
+            <p class="empty-message">
+              No public maternity services available yet.
+            </p>
+          `;
+          return;
+        }
 
-      serviceList.appendChild(createSidebarCard(service, index));
-    });
+        const bounds = [];
+
+        publicServices.forEach(function(service, index) {
+          const lat = Number(service.latitude);
+          const lng = Number(service.longitude);
+
+          if (Number.isNaN(lat) || Number.isNaN(lng)) {
+            return;
+          }
+
+          const coords = [lat, lng];
+          bounds.push(coords);
+
+          const marker = L.marker(coords, {
+            icon: getStatusIcon(service.status)
+          }).addTo(map);
+
+          marker.bindPopup(createPopup(service));
+
+          marker.on("mouseover", function() {
+            this.openPopup();
+          });
+
+          marker.on("click", function() {
+            this.openPopup();
+          });
+
+          markers[index] = marker;
+          serviceList.appendChild(createSidebarCard(service, index));
+        });
+
+        if (bounds.length > 0) {
+          map.fitBounds(bounds, {
+            padding: [40, 40]
+          });
+        }
+
+      } catch (error) {
+        console.error(error);
+        serviceList.innerHTML = `
+          <p class="empty-message">
+            Error loading services. Check data/services.json.
+          </p>
+        `;
+      }
+    }
+
+    loadServices();
   </script>
 </body>
 </html>
