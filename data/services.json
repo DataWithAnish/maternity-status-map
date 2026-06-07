@@ -13,5 +13,20 @@
     "created_at": "2026-06-07T07:58:17.633039+00:00",
     "updated_at": "2026-06-07T07:58:17.633039+00:00",
     "updated_by": "local-admin"
+  },
+  {
+    "service_id": "1740531e-ef65-4ce1-bdce-da3edb0a03a2",
+    "name": "Glen Innes District Hospital",
+    "status": "yellow",
+    "status_text": "Reduced access / needs attention",
+    "last_checked": "2026-06-07",
+    "notes": "Possible temporary service disruption. Awaiting verification.",
+    "latitude": -29.738,
+    "longitude": 151.738,
+    "profile_url": "#",
+    "is_public": true,
+    "created_at": "2026-06-07T08:06:26.522009+00:00",
+    "updated_at": "2026-06-07T08:06:26.522009+00:00",
+    "updated_by": "local-admin"
   }
 ]
