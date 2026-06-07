@@ -1,7 +1,7 @@
 [
   {
     "service_id": "48b918d1-858e-4236-87fb-7fadb9059588",
-    "name": "test Armidale Hospital Maternity Service",
+    "name": "Armidale Hospital Maternity Service",
     "status": "green",
     "status_text": "Operating as expected",
     "last_checked": "2026-06-07",
@@ -11,7 +11,7 @@
     "profile_url": "",
     "is_public": true,
     "created_at": "2026-06-07T07:58:17.633039+00:00",
-    "updated_at": "2026-06-07T07:58:17.633039+00:00",
+    "updated_at": "2026-06-07T11:04:46.734618+00:00",
     "updated_by": "local-admin"
   },
   {
